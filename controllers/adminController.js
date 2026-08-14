@@ -160,11 +160,11 @@ const loginAdmin = async (req, res) => {
 const logoutAdmin = async (req, res) => {
   try {
     res.cookie("adminToken", "", {
-      httpOnly: true,
-      expires: new Date(0),
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-    });
+  httpOnly: true,
+  expires: new Date(0),
+  sameSite: "none",
+  secure: true,
+});
 
     res.status(200).json({
       success: true,

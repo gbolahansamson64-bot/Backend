@@ -1,5 +1,16 @@
 require("dotenv").config();
 
+const stripe = require("./config/stripe");
+
+stripe.accounts.retrieve()
+  .then(account => {
+    console.log("STRIPE ACCOUNT:", account.id);
+    console.log("STRIPE ACCOUNT NAME:", account.business_profile?.name);
+  })
+  .catch(error => {
+    console.error("STRIPE ACCOUNT CHECK ERROR:", error.message);
+  });
+
 
 const app = require("./app");
 const connectDB = require("./config/db");

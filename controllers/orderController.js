@@ -24,34 +24,41 @@ const createCheckoutSession = async (req, res) => {
             paymentMethod
         } = req.body;
 
-        // -----------------------------------------
-        // 1. Validate shipping information
-        // -----------------------------------------
+        // Determine the customer the same way the rest of the app does:
+        // logged-in users via req.user, guests via the guestId cookie.
+        const userId = req.user ? req.user._id.toString() : null;
+        const guestId = req.user ? null : (req.cookies.guestId || null);
 
-        if (
-            !firstName ||
-            !lastName ||
-            !email ||
-            !phone ||
-            !address ||
-            !city ||
-            !state ||
-            !country ||
-            !postalCode
-        ) {
+        if (!userId && !guestId) {
+
+            console.error(
+                "Checkout request is missing both a logged-in user and a guestId cookie."
+            );
+
             return res.status(400).json({
                 success: false,
-                message: "Please complete all shipping information."
+                message: "Missing customer information."
             });
+
         }
 
+        if (!firstName || !lastName || !email || !address || !city || !state || !country || !postalCode) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Please fill in all required shipping details."
+            });
+
+        }
+
+
         // -----------------------------------------
-        // 2. Get the authenticated user's cart
+        // 6. Get customer's cart
         // -----------------------------------------
 
-        const cart = await Cart.findOne({
-            user: req.user._id
-        }).populate("items.product");
+        const cart = await Cart.findOne(
+            userId ? { user: userId } : { guestId }
+        ).populate("items.product");
 
         if (!cart || cart.items.length === 0) {
             return res.status(400).json({
@@ -154,7 +161,8 @@ const createCheckoutSession = async (req, res) => {
                 `${process.env.CLIENT_URL}/cart.html`,
 
             metadata: {
-                userId: req.user._id.toString(),
+                userId: req.user ? req.user._id.toString() : "",
+                guestId: req.user ? "" : (req.cookies.guestId || ""),
 
                 firstName,
                 lastName,
@@ -261,9 +269,7 @@ const getSingleOrder = async (req, res) => {
 
         if (
 
-            order.user._id.toString() !==
-
-            req.user._id.toString()
+            (!order.user || order.user._id.toString() !== req.user._id.toString())
 
             &&
 
@@ -327,9 +333,9 @@ const cancelOrder = async (req, res) => {
 
         if (
 
-            order.user.toString() !==
+            !order.user ||
 
-            req.user._id.toString()
+            order.user.toString() !== req.user._id.toString()
 
         ) {
 
@@ -543,6 +549,7 @@ const stripeWebhook = async (req, res) => {
 
         const {
             userId,
+            guestId,
             firstName,
             lastName,
             email,
@@ -555,11 +562,10 @@ const stripeWebhook = async (req, res) => {
             paymentMethod
         } = session.metadata;
 
-
-        if (!userId) {
+        if (!userId && !guestId) {
 
             console.error(
-                "Stripe session is missing userId metadata."
+                "Stripe session is missing both userId and guestId metadata."
             );
 
             return res.status(400).json({
@@ -571,12 +577,12 @@ const stripeWebhook = async (req, res) => {
 
 
         // -----------------------------------------
-        // 6. Get customer's cart
+        // 2. Get the cart — logged-in user or guest
         // -----------------------------------------
 
-        const cart = await Cart.findOne({
-            user: userId
-        }).populate("items.product");
+        const cartFilter = userId ? { user: userId } : { guestId };
+
+        const cart = await Cart.findOne(cartFilter).populate("items.product");
 
 
         if (!cart || cart.items.length === 0) {
@@ -710,7 +716,7 @@ const stripeWebhook = async (req, res) => {
 
         const newOrder = await Order.create({
 
-            user: userId,
+            user: userId || null,
 
             customerEmail: email,
 

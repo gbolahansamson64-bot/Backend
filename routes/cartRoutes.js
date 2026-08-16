@@ -18,18 +18,20 @@ const {
 
 } = require("../controllers/cartController");
 
-const { protect } = require("../middleware/authMiddleware");
+// const { protect } = require("../middleware/authMiddleware");
 
-router.post("/add", protect, addToCart);
+const { optionalAuth } = require("../middleware/authMiddleware");
 
-router.get("/", protect, getCart);
+router.post("/add", optionalAuth, addToCart);
 
-router.put("/update/:productId", protect, updateCartItem);
+router.get("/", optionalAuth, getCart);
 
-router.delete("/remove/:productId", protect, removeCartItem);
+router.put("/update/:productId", optionalAuth, updateCartItem);
 
-router.delete("/clear", protect, clearCart);
+router.delete("/remove/:productId", optionalAuth, removeCartItem);
 
-router.get("/count", protect, getCartCount);
+router.delete("/clear", optionalAuth, clearCart);
+
+router.get("/count", optionalAuth, getCartCount);
 
 module.exports = router;

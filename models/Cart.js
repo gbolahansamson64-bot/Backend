@@ -30,9 +30,19 @@ const cartSchema = new mongoose.Schema({
 
         ref: "User",
 
-        required: true,
+        unique: true,
 
-        unique: true
+        sparse: true
+
+    },
+
+    guestId: {
+
+        type: String,
+
+        unique: true,
+
+        sparse: true
 
     },
 

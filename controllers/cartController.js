@@ -1,5 +1,27 @@
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
+const crypto = require("crypto");
+
+const getCartFilter = (req, res) => {
+    if (req.user) {
+        return { user: req.user._id };
+    }
+
+    let guestId = req.cookies.guestId;
+
+    if (!guestId) {
+        guestId = crypto.randomUUID();
+
+        res.cookie("guestId", guestId, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        });
+    }
+
+    return { guestId };
+};
 
 const buildCartResponse = (cart) => {
 
@@ -90,17 +112,15 @@ if (product.stock < (quantity || 1)) {
 
 }
 
-        let cart = await Cart.findOne({
+        const cartFilter = getCartFilter(req, res);
 
-            user: req.user._id
-
-        });
+        let cart = await Cart.findOne(cartFilter);
 
         if (!cart) {
 
             cart = await Cart.create({
 
-                user: req.user._id,
+                ...cartFilter,
 
                 items: []
 
@@ -188,11 +208,7 @@ const getCart = async (req, res) => {
 
     try {
 
-        const cart = await Cart.findOne({
-
-            user: req.user._id
-
-        }).populate({ path: "items.product", select: "name price images stock badge"});
+        const cart = await Cart.findOne(getCartFilter(req, res)).populate({ path: "items.product", select: "name price images stock badge"});
 
        const cartData = buildCartResponse(cart);
 
@@ -264,11 +280,7 @@ if (quantity > product.stock) {
 
 }
 
-        const cart = await Cart.findOne({
-
-            user: req.user._id
-
-        });
+        const cart = await Cart.findOne(getCartFilter(req, res));
 
         if (!cart) {
 
@@ -348,11 +360,7 @@ const removeCartItem = async (req, res) => {
 
         const { productId } = req.params;
 
-        const cart = await Cart.findOne({
-
-            user: req.user._id
-
-        });
+        const cart = await Cart.findOne(getCartFilter(req, res));
 
         if (!cart) {
 
@@ -416,11 +424,7 @@ const clearCart = async (req, res) => {
 
     try {
 
-        const cart = await Cart.findOne({
-
-            user: req.user._id
-
-        });
+        const cart = await Cart.findOne(getCartFilter(req, res));
 
         if (!cart) {
 
@@ -474,11 +478,7 @@ const getCartCount = async (req, res) => {
 
     try {
 
-        const cart = await Cart.findOne({
-
-            user: req.user._id
-
-        });
+        const cart = await Cart.findOne(getCartFilter(req, res));
 
         let count = 0;
 

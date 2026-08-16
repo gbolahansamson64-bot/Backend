@@ -2,7 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
-const { protect } = require("../middleware/authMiddleware");
+const { protect, optionalAuth } = require("../middleware/authMiddleware");
 
 const {
   createCheckoutSession,
@@ -13,10 +13,10 @@ const {
 } = require("../controllers/orderController");
 
 
-// Customer Checkout
+// Customer Checkout — guests allowed, logged-in users still get req.user
 router.post(
   "/checkout",
-  protect,
+  optionalAuth,
   createCheckoutSession
 );
 
@@ -28,7 +28,7 @@ router.get(
 );
 
 
-// Customer Order History
+// Customer Order History — requires an account
 router.get(
   "/my-orders",
   protect,
@@ -36,7 +36,7 @@ router.get(
 );
 
 
-// Single Order
+// Single Order — requires an account
 router.get(
   "/:orderId",
   protect,
@@ -44,7 +44,7 @@ router.get(
 );
 
 
-// Cancel Order
+// Cancel Order — requires an account
 router.patch(
   "/:orderId/cancel",
   protect,

@@ -26,7 +26,7 @@ const protectAdmin = require("../middleware/adminMiddleware");
 const {
     getStoreSettings,
     updateStoreSettings
-} = require("../controllers/SettingsController");
+} = require("../controllers/settingsController");
 
 
 // PUBLIC ROUTES

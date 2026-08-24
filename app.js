@@ -14,7 +14,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const adminStatisticsRoutes = require("./routes/adminStatisticsRoutes");
 const adminNotificationRoutes = require("./routes/adminNotificationRoutes");
 const shippingRoutes = require("./routes/shippingRoutes");
-// const settingsRoutes = require("./routes/settingsRoutes");
+const settingsRoutes = require("./routes/settingsRoutes");
 
 const app = express();
 
@@ -89,7 +89,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/admin/statistics", adminStatisticsRoutes);
 app.use("/api/admin/notifications", adminNotificationRoutes);
 app.use("/api/admin/shipping", shippingRoutes);
-// app.use("/api/admin/settings", settingsRoutes);
+app.use("/api/admin/settings", settingsRoutes);
 
 app.get("/", (req, res) => {
   res.json({

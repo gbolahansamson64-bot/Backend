@@ -96,6 +96,7 @@ capSize: {
 
 laceType: {
     type: String,
+    trim: true,
     enum: [
         "HD Lace",
         "Transparent Lace",

@@ -16,6 +16,7 @@ const {
 } = require("../controllers/authController");
 const passport = require("passport");
 const { protect } = require("../middleware/authMiddleware");
+const upload = require("../middleware/upload");
 
 router.post("/register", register);
 
@@ -25,7 +26,7 @@ router.post("/logout", protect, logout);
 
 router.get("/me", protect, getMe);
 
-router.put("/profile", protect, updateProfile);
+router.put("/profile", protect, upload.single("image"), updateProfile);
 
 router.post("/heartbeat", protect, heartbeat);
 

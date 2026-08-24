@@ -9,6 +9,7 @@ const sendEmail = require("../utils/sendEmail");
 const cookieOptions = require("../utils/cookieOptions");
 const generateToken = require("../utils/generateToken");
 const sendTokenResponse = require("../utils/sendTokenResponse");
+const cloudinary = require("../config/cloudinary");
 
 
 
@@ -350,113 +351,137 @@ const getMe = async (req, res) => {
 // ==========================
 
 const updateProfile = async (req, res) => {
-  try {
-    const {
-      firstName,
-      lastName,
-      email,
-      phoneCode,
-      phone,
-      dob,
-      gender,
-      address,
-      country,
-      state,
-      city,
-      postalCode,
-      newsletter,
-      image,
-    } = req.body;
+    try {
+        const {
+            firstName,
+            lastName,
+            email,
+            phoneCode,
+            phone,
+            dob,
+            gender,
+            address,
+            country,
+            state,
+            city,
+            postalCode,
+            newsletter,
+        } = req.body;
 
-    // Basic validation
-    if (!firstName || !lastName || !email) {
-      return res.status(400).json({
-        success: false,
-        message: "First name, last name and email are required",
-      });
+        // Basic validation
+        if (!firstName || !lastName || !email) {
+            return res.status(400).json({
+                success: false,
+                message: "First name, last name and email are required",
+            });
+        }
+
+        // Check whether another account already uses this email
+        const normalizedEmail = email.toLowerCase().trim();
+
+        const existingUser = await User.findOne({
+            email: normalizedEmail,
+        });
+
+        if (
+            existingUser &&
+            existingUser._id.toString() !== req.user._id.toString()
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "This email address is already in use",
+            });
+        }
+
+        // Update basic profile information
+        req.user.firstName = firstName.trim();
+        req.user.lastName = lastName.trim();
+        req.user.email = normalizedEmail;
+
+        req.user.phoneCode = phoneCode || "";
+        req.user.phone = phone || "";
+        req.user.dob = dob || null;
+        req.user.gender = gender || "";
+
+        req.user.address = {
+            street: address || "",
+            country: country || "",
+            state: state || "",
+            city: city || "",
+            postalCode: postalCode || "",
+        };
+
+        req.user.newsletter =
+            newsletter === true ||
+            newsletter === "true";
+
+        // =====================================================
+        // PROFILE IMAGE → CLOUDINARY
+        // =====================================================
+
+        if (req.file) {
+            const uploadResult = await new Promise(
+                (resolve, reject) => {
+                    const stream =
+                        cloudinary.uploader.upload_stream(
+                            {
+                                folder: "blegab/profile-images",
+                                resource_type: "image",
+                            },
+                            (error, result) => {
+                                if (error) {
+                                    reject(error);
+                                } else {
+                                    resolve(result);
+                                }
+                            }
+                        );
+
+                    stream.end(req.file.buffer);
+                }
+            );
+
+            req.user.avatar = uploadResult.secure_url;
+        }
+
+        await req.user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+
+            user: {
+                id: req.user._id,
+                firstName: req.user.firstName,
+                lastName: req.user.lastName,
+                email: req.user.email,
+                phoneCode: req.user.phoneCode,
+                phone: req.user.phone,
+                dob: req.user.dob,
+                gender: req.user.gender,
+
+                address: {
+                    street: req.user.address?.street || "",
+                    country: req.user.address?.country || "",
+                    state: req.user.address?.state || "",
+                    city: req.user.address?.city || "",
+                    postalCode:
+                        req.user.address?.postalCode || "",
+                },
+
+                newsletter: req.user.newsletter,
+
+                image: req.user.avatar || "",
+            },
+        });
+    } catch (error) {
+        console.error("Update profile error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
-
-    // Check whether another account already uses this email
-    const normalizedEmail = email.toLowerCase().trim();
-
-const existingUser = await User.findOne({
-  email: normalizedEmail,
-});
-
-if (
-  existingUser &&
-  existingUser._id.toString() !== req.user._id.toString()
-) {
-  return res.status(400).json({
-    success: false,
-    message: "This email address is already in use",
-  });
-}
-
-    // Update basic profile information
-    req.user.firstName = firstName.trim();
-    req.user.lastName = lastName.trim();
-    req.user.email = email.toLowerCase().trim();
-
-    req.user.phoneCode = phoneCode || "";
-    req.user.phone = phone || "";
-
-    req.user.dob = dob || null;
-    req.user.gender = gender || "";
-
-    req.user.address = {
-      street: address || "",
-      country: country || "",
-      state: state || "",
-      city: city || "",
-      postalCode: postalCode || "",
-    };
-
-    req.user.newsletter = !!newsletter;
-
-    // Temporary image handling
-    // We will replace this with Cloudinary shortly.
-    if (typeof image === "string") {
-      req.user.avatar = image;
-    }
-
-    await req.user.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-
-      user: {
-        id: req.user._id,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        email: req.user.email,
-        phoneCode: req.user.phoneCode,
-        phone: req.user.phone,
-        dob: req.user.dob,
-        gender: req.user.gender,
-
-        address: {
-          street: req.user.address?.street || "",
-          country: req.user.address?.country || "",
-          state: req.user.address?.state || "",
-          city: req.user.address?.city || "",
-          postalCode: req.user.address?.postalCode || "",
-        },
-
-        newsletter: req.user.newsletter,
-
-        image: req.user.avatar || "",
-      },
-    });
-  } catch (error) {
-    console.error("Update profile error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };
 
 const heartbeat = async (req, res) => {

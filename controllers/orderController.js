@@ -437,11 +437,15 @@ const shippingRules =
         available: true
     }).select("countryCode");
 
-
 const allowedShippingCountries =
     shippingRules.map(
         rule => rule.countryCode
     );
+
+    console.log(
+    "ALLOWED SHIPPING COUNTRIES SENT TO STRIPE:",
+    allowedShippingCountries
+);
 
     if (allowedShippingCountries.length === 0) {
 

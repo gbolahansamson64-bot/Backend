@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const cookieOptions = require("../utils/cookieOptions");
 
 const protect = async (req, res, next) => {
   try {
@@ -40,15 +41,15 @@ if (!token) {
 };
 
 const optionalProtect = async (req, res, next) => {
+  const token = req.cookies.token;
+
+  // No token = guest checkout
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
   try {
-    const token = req.cookies.token;
-
-    // No token = guest checkout
-    if (!token) {
-      req.user = null;
-      return next();
-    }
-
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET
@@ -59,10 +60,15 @@ const optionalProtect = async (req, res, next) => {
     ).select("-password");
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "User not found"
-      });
+      // Token is well-formed but the account it points to
+      // no longer exists (deleted account, stale/leftover
+      // cookie from a wiped DB, etc). This middleware is
+      // "optional" auth, so fall back to guest instead of
+      // blocking the request — clear the bad cookie so the
+      // browser stops sending it.
+      res.clearCookie("token", cookieOptions);
+      req.user = null;
+      return next();
     }
 
     req.user = user;
@@ -70,10 +76,11 @@ const optionalProtect = async (req, res, next) => {
     next();
 
   } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: "Token is invalid"
-    });
+    // Expired/invalid/tampered token — same reasoning as above,
+    // don't hard-fail an optional-auth route, just treat as guest.
+    res.clearCookie("token", cookieOptions);
+    req.user = null;
+    return next();
   }
 };
 

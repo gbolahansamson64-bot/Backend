@@ -472,6 +472,57 @@ const deleteShippingRule = async (req, res) => {
 };
 
 
+// ==================================================
+// GET PUBLIC SHIPPING RULES
+// (No auth — used by the storefront checkout page.
+//  Only returns rules the admin has marked available.)
+// ==================================================
+
+const getPublicShippingRules = async (req, res) => {
+
+    try {
+
+        const rules =
+            await ShippingRule.find({
+                available: true
+            })
+                .select("country countryCode fee -_id")
+                .sort({
+                    country: 1
+                });
+
+        return res.status(200).json({
+
+            success: true,
+
+            count:
+                rules.length,
+
+            rules
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "GET PUBLIC SHIPPING RULES ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                "Unable to retrieve shipping rules."
+
+        });
+
+    }
+
+};
+
+
 module.exports = {
 
     getShippingRules,
@@ -480,6 +531,8 @@ module.exports = {
 
     updateShippingRule,
 
-    deleteShippingRule
+    deleteShippingRule,
+
+    getPublicShippingRules
 
 };

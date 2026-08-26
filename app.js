@@ -15,6 +15,7 @@ const adminStatisticsRoutes = require("./routes/adminStatisticsRoutes");
 const adminNotificationRoutes = require("./routes/adminNotificationRoutes");
 const shippingRoutes = require("./routes/shippingRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
+const publicShippingRoutes = require("./routes/publicShippingRoutes");
 
 const app = express();
 
@@ -86,6 +87,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/shipping", publicShippingRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/statistics", adminStatisticsRoutes);
 app.use("/api/admin/notifications", adminNotificationRoutes);
